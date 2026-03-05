@@ -3,8 +3,6 @@ name: HTML to APK Build
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
@@ -25,24 +23,24 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Capacitor and Dependencies
+    - name: Install Dependencies
       run: |
-        npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
         mkdir -p www
-        cp inbox.html www/index.html || echo "inbox.html not found, skipping copy"
+        cp inbox.html www/index.html
         npx cap init "NKHESPORTS" "com.nkh.app" --web-dir www
         npx cap add android
 
-    - name: Clean Gradle Cache
-      run: |
-        rm -rf ~/.gradle/caches
-
-    - name: Build Android Project
+    - name: Build Android APK
       run: |
         cd android
+        # গ্রেডল ক্যাশ অপটিমাইজ করা এবং মেমরি ইস্যু কমানো
+        echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> gradle.properties
         chmod +x gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleDebug --no-daemon --max-workers=2
+      env:
+        # জাভা মেমরি লিমিট সেট করা
+        GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
